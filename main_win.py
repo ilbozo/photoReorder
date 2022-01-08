@@ -40,63 +40,47 @@ def write_down():
 
 
 
-#json_file = open("C:\\Users\\Bozo\\PycharmProjects\\photoReorder\\Desktop.json", "r")
 json_file = open("/home/bozo/PycharmProjects/photoReorder/Foto-linux.json", "r")
 all_images = json.load(json_file)
+skip_formats = ["ico", "icns"]
 
 for image_file in all_images:
-    if not str(image_file).endswith("ico"):
-        metadata = pyexiv2.ImageMetadata(str(image_file))
-        metadata.read()
-        accepted_tags = ["Xmp.xmp.CreateDate", "Xmp.MicrosoftPhoto.DateAcquired", "Exif.Image.DateTime", 'Exif.Photo.DateTimeOriginal', 'Exif.Photo.DateTimeDigitized']
-        print("----------------------------------------------")
-        print("File: {}".format(image_file))
-        file_mod_date = time.strptime(time.ctime(os.path.getmtime(image_file)))
-        print("File last date: {}".format(file_mod_date))
+    for i in skip_formats:
+        if not image_file.endswith("." + i):
+            print("----------------------------------------------")
+            print("File: {}".format(image_file))
 
-        # print("IPTC: ", metadata.iptc_keys)
-        # print("EXIF: ", metadata.exif_keys)
-        # print("XMP: ", metadata.xmp_keys)
+            metadata = pyexiv2.ImageMetadata(str(image_file))
+            try:
+                metadata.read()
+                file_mod_date = time.strptime(time.ctime(os.path.getmtime(image_file)))
+            except:
+                file_mod_date = '2090:01:01 01:01:01'
+            print("File last date: {}".format(file_mod_date))
 
-        im = Image.open(image_file)
-        exif = im.getexif()
-        exif_tags = {ExifTags.TAGS[k]: v for k, v in exif.items() if k in ExifTags.TAGS and type(v) is not bytes}
-        if not exif_tags["DateTime"] == '0000:00:00 00:00:00':
-            exif_date = time.strptime(exif_tags["DateTime"], "%Y:%m:%d %H:%M:%S")
-        else:
-            print("Overriding date cause of exif failure!!!")
-            exif_override_tag = '0001:01:01 01:01:01'
-            exif_date = time.strptime(exif_override_tag, "%Y:%m:%d %H:%M:%S")
-        print("File exif date: {}".format(exif_date))
-        result = file_mod_date < exif_date
-        print("Is exif earlier than file date? {}".format(result))
-
-
-
-
-
-
-
-
-
-        # for a in accepted_tags:
-        #     if a in metadata.keys():
-        #         tag = metadata[a].value
-        #
-        #
-        #         print("\t", a, " : ", tag)
+            im = Image.open(image_file)
+            exif = im.getexif()
+            exif_tags = {ExifTags.TAGS[k]: v for k, v in exif.items() if k in ExifTags.TAGS and type(v) is not bytes}
+            if "DateTime" in exif_tags.keys():
+                if not exif_tags["DateTime"] == '0000:00:00 00:00:00':
+                    print(exif_tags["DateTime"])
+                    for sep in [":", "."]:
+                        try:
+                            exif_date = time.strptime(exif_tags["DateTime"], "%Y{}%m{}%d %H:%M:%S".format(sep, sep))
+                        except:
+                            continue
+                        if not exif_date:
+                            raise Exception
+                else:
+                    print("Overriding date cause of exif failure!!!")
+                    exif_override_tag = '0001:01:01 01:01:01'
+                    exif_date = time.strptime(exif_override_tag, "%Y:%m:%d %H:%M:%S")
+                print("File exif date: {}".format(exif_date))
+                result = file_mod_date < exif_date
+                print("Is exif earlier than file date? {}".format(result))
+            else:
+                print("File has no DateTime tag: {}".format(image_file))
+                print("Here i should be using the creation date: {}".format(file_mod_date))
+            print("\n")
 
 
-
-        print("----------------------------------------------")
-
-
-
-
-# Using the timestamp string to create a
-# time object/structure
-# t_obj = time.strptime(m_ti)
-
-# Transforming the time object to a timestamp
-# of ISO 8601 format
-# T_stamp = time.strftime("%Y-%m-%d %H:%M:%S", t_obj)
