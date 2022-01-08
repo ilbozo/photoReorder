@@ -1,12 +1,13 @@
 import json
 import os.path
+import datetime
 import subprocess, sys
 import time
 from pathlib import Path
-from PIL import Image
+from pprint import pprint
 
-
-
+import pyexiv2
+from PIL import Image, ExifTags
 
 
 def get_images_from_path(directory):
@@ -28,37 +29,20 @@ def get_images_from_path(directory):
     return images
 
 def write_down():
-    all_images = get_images_from_path('E:\\Foto\\Desktop\\')
+    all_images = get_images_from_path('/run/media/bozo/Sante/Foto')
     json_string = json.dumps(all_images)
-    json_file = open("C:\\Users\\Bozo\\PycharmProjects\\photoReorder\\Desktop.json", "w")
+    json_file = open("/home/bozo/PycharmProjects/photoReorder/Foto-linux.json", "w")
     json_file.write(json_string)
     json_file.close()
 
-# write_down()
+#write_down()
 
 
 
 
-json_file = open("C:\\Users\\Bozo\\PycharmProjects\\photoReorder\\Desktop.json", "r")
+#json_file = open("C:\\Users\\Bozo\\PycharmProjects\\photoReorder\\Desktop.json", "r")
+json_file = open("/home/bozo/PycharmProjects/photoReorder/Foto-linux.json", "r")
 all_images = json.load(json_file)
-all_images = ["C:\\Users\\Bozo\\Downloads\\002.JPG"]
-
-
-#
-# command = "Get-FileMetaData {}"
-# p = subprocess.Popen(["powershell.exe", command], stdout=sys.stdout)
-# p.communicate()
-
-
-for i in all_images:
-    # print(os.stat(i))
-    # print(time.ctime(os.path.getatime(i)))
-    # print(time.ctime(os.path.getctime(i)))
-    # print(time.ctime(os.path.getmtime(i)))
-    command = "Get-Item {} | select-object -Property *".format(i)
-    p = subprocess.Popen(["powershell.exe", command], stdout=sys.stdout)
-    p.communicate()
-
 
 for image_file in all_images:
     if not str(image_file).endswith("ico"):
@@ -67,17 +51,31 @@ for image_file in all_images:
         accepted_tags = ["Xmp.xmp.CreateDate", "Xmp.MicrosoftPhoto.DateAcquired", "Exif.Image.DateTime", 'Exif.Photo.DateTimeOriginal', 'Exif.Photo.DateTimeDigitized']
         print("----------------------------------------------")
         print("File: {}".format(image_file))
-        print("File creation date: {}", format(time.ctime(os.path.getctime(image_file))))
+        file_mod_date = time.strptime(time.ctime(os.path.getmtime(image_file)))
+        print("File last modification date: {}".format(file_mod_date))
+
+        # print("IPTC: ", metadata.iptc_keys)
+        # print("EXIF: ", metadata.exif_keys)
+        # print("XMP: ", metadata.xmp_keys)
+
+        im = Image.open(image_file)
+        exif = im.getexif()
+        exif_tags = {ExifTags.TAGS[k]: v for k, v in exif.items() if k in ExifTags.TAGS and type(v) is not bytes}
+        exif_date = time.strptime(exif_tags["DateTime"], "%Y:%m:%d %H:%M:%S")
+        print("EXIF date: {}".format(exif_date))
 
 
-        print("IPTC: ", metadata.iptc_keys)
-        print("EXIF: ", metadata.exif_keys)
-        print("XMP: ", metadata.xmp_keys)
 
-        print("Looking for keys and values:")
-        for a in accepted_tags:
-            if a in metadata.keys():
-                print("\t", a, " : ", metadata[a])
+
+
+
+        # for a in accepted_tags:
+        #     if a in metadata.keys():
+        #         tag = metadata[a].value
+        #
+        #
+        #         print("\t", a, " : ", tag)
+
 
 
         print("----------------------------------------------")
