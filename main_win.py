@@ -68,9 +68,8 @@ for image_file in all_images:
                         try:
                             exif_date = time.strptime(exif_tags["DateTime"], "%Y{}%m{}%d %H:%M:%S".format(sep, sep))
                         except:
+                            exif_date = None
                             continue
-                        if not exif_date:
-                            raise Exception
                 else:
                     print("Overriding date cause of exif failure!!!")
                     exif_override_tag = '0001:01:01 01:01:01'
