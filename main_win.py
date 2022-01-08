@@ -52,7 +52,7 @@ for image_file in all_images:
         print("----------------------------------------------")
         print("File: {}".format(image_file))
         file_mod_date = time.strptime(time.ctime(os.path.getmtime(image_file)))
-        print("File last modification date: {}".format(file_mod_date))
+        print("File last date: {}".format(file_mod_date))
 
         # print("IPTC: ", metadata.iptc_keys)
         # print("EXIF: ", metadata.exif_keys)
@@ -61,8 +61,18 @@ for image_file in all_images:
         im = Image.open(image_file)
         exif = im.getexif()
         exif_tags = {ExifTags.TAGS[k]: v for k, v in exif.items() if k in ExifTags.TAGS and type(v) is not bytes}
-        exif_date = time.strptime(exif_tags["DateTime"], "%Y:%m:%d %H:%M:%S")
-        print("EXIF date: {}".format(exif_date))
+        if not exif_tags["DateTime"] == '0000:00:00 00:00:00':
+            exif_date = time.strptime(exif_tags["DateTime"], "%Y:%m:%d %H:%M:%S")
+        else:
+            print("Overriding date cause of exif failure!!!")
+            exif_override_tag = '0001:01:01 01:01:01'
+            exif_date = time.strptime(exif_override_tag, "%Y:%m:%d %H:%M:%S")
+        print("File exif date: {}".format(exif_date))
+        result = file_mod_date < exif_date
+        print("Is exif earlier than file date? {}".format(result))
+
+
+
 
 
 
