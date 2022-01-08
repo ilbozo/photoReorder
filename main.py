@@ -1,4 +1,5 @@
 import os.path
+import time
 
 import filetype
 import pyexiv2
@@ -8,48 +9,55 @@ from PIL import Image
 
 
 
-def get_metadata_files():
-    # assign directory
-    directory = '/run/media/bozo/Sante/Foto'
+def get_images_from_path(directory):
     # iterate over files in
     # that directory
     files = Path(directory).rglob('*')
     xmp_files = []
-    exif_files = []
+    images = []
     for filename in files:
         if os.path.isfile(filename):
             # list all the images
-            if filetype.is_image(filename):
+            try:
+                im = Image.open(filename)
                 # check if image has exif or xmp date
-                metadata = pyexiv2.ImageMetadata(str(filename))
-                metadata.read()
-                if len(metadata.xmp_keys)>0:
-                    xmp_files.append(filename)
-                if len(metadata.exif_keys):
-                    exif_files.append(filename)
-
-            elif filetype.is_video(filename):
-                print(f"{filename} is a valid video...")
-    return xmp_files
+                images.append(filename)
+                im.close()
+            except:
+                continue
+    return images
 
 
-# xmp_files = get_metadata_files()
-# print("We're dealing with: {} files!")
-# for xmp_file in xmp_files:
-#     print(xmp_file)
-#     metadata = pyexiv2.ImageMetadata(str(xmp_file))
-#     metadata.read()
-#     print("-------", xmp_file, "-------")
-#     print(metadata.xmp_keys)
-#     break
+all_images = get_images_from_path('/run/media/bozo/Sante/export/olympus_c740/0000')
+
+print("\n\n\nWe're dealing with: {} files!\n\n\n".format(len(all_images)))
+exif_date = []
+other_date = []
+
+for image_file in all_images:
+    if not str(image_file).endswith("ico"):
+        metadata = pyexiv2.ImageMetadata(str(image_file))
+        metadata.read()
+        accepted_tags = ["Xmp.xmp.CreateDate", "Xmp.MicrosoftPhoto.DateAcquired", "Exif.Image.DateTime", 'Exif.Photo.DateTimeOriginal', 'Exif.Photo.DateTimeDigitized']
+        print("----------------------------------------------")
+        print("File: {}".format(image_file))
+        print("File creation date: {}", format(time.ctime(os.path.getctime(image_file))))
+
+
+        print("IPTC: ", metadata.iptc_keys)
+        print("EXIF: ", metadata.exif_keys)
+        print("XMP: ", metadata.xmp_keys)
+
+        print("Looking for keys and values:")
+        for a in accepted_tags:
+            if a in metadata.keys():
+                print("\t", a, " : ", metadata[a])
+
+
+        print("----------------------------------------------")
 
 
 
-file = "/run/media/bozo/Sante/Foto/Backup/File Nikon100/175NIKON/DSCN1763.JPG"
-metadata = pyexiv2.ImageMetadata(str(file))
-metadata.read()
-print("-------", file, "-------")
-print(metadata.xmp_keys)
 
 
 # if it has xmp convert it to exif
